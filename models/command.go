@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/beego/beego/v2/client/httplib"
+	"github.com/beego/beego/v2/server/web"
 	"gorm.io/gorm"
 )
 
@@ -163,16 +165,15 @@ var codeSignals = []CodeSignal{
 	{
 		Command: []string{"qrcode", "扫码", "二维码", "scan"},
 		Handle: func(sender *Sender) interface{} {
-			// url := fmt.Sprintf("http://127.0.0.1:%d/api/login/qrcode.png?tp=%s&uid=%d&gid=%d", web.BConfig.Listen.HTTPPort, sender.Type, sender.UserID, sender.ChatID)
-			// if sender.Type == "tgg" {
-			// 	url += fmt.Sprintf("&mid=%v&unm=%v", sender.MessageID, sender.Username)
-			// }
-			// rsp, err := httplib.Get(url).Response()
-			// if err != nil {
-			// 	return nil
-			// }
-			// return rsp
-			return "小滴滴和京东没有任何关系，请使用ninja。"
+			url := fmt.Sprintf("http://127.0.0.1:%d/api/login/qrcode.png?tp=%s&uid=%d&gid=%d", web.BConfig.Listen.HTTPPort, sender.Type, sender.UserID, sender.ChatID)
+			if sender.Type == "tgg" {
+				url += fmt.Sprintf("&mid=%v&unm=%v", sender.MessageID, sender.Username)
+			}
+			rsp, err := httplib.Get(url).Response()
+			if err != nil {
+				return nil
+			}
+			return rsp
 		},
 	},
 	{
@@ -198,7 +199,6 @@ var codeSignals = []CodeSignal{
 	},
 	{
 		Command: []string{"get-ua", "ua"},
-		Admin:   true,
 		Handle: func(sender *Sender) interface{} {
 			if !sender.IsAdmin {
 				coin := GetCoin(sender.UserID)
@@ -236,7 +236,6 @@ var codeSignals = []CodeSignal{
 	},
 	{
 		Command: []string{"查询", "query"},
-		Admin:   true,
 		Handle: func(sender *Sender) interface{} {
 			sender.handleJdCookies(func(ck *JdCookie) {
 				sender.Reply(ck.Query())
@@ -279,7 +278,7 @@ var codeSignals = []CodeSignal{
 				cost = u.Coin
 			}
 			r := time.Now().Nanosecond() % 10
-			if r < 5 || baga > 0 {
+			if r < 7 || baga > 0 {
 				sender.Reply(fmt.Sprintf("很遗憾你失去了%d枚许愿币。", cost))
 				cost = -cost
 			} else {
@@ -300,7 +299,6 @@ var codeSignals = []CodeSignal{
 	{
 		Command: []string{"许愿", "愿望", "wish", "hope", "want"},
 		Handle: func(sender *Sender) interface{} {
-			return "听不到，看不见。"
 			ct := sender.JoinContens()
 			if ct == "" {
 				rt := []string{}
@@ -363,7 +361,7 @@ var codeSignals = []CodeSignal{
 		},
 	},
 	{
-		Command: []string{"愿望达成", "达成愿望"},
+		Command: []string{"愿望达成"},
 		Admin:   true,
 		Handle: func(sender *Sender) interface{} {
 			w := &Wish{}
@@ -414,21 +412,6 @@ var codeSignals = []CodeSignal{
 		},
 	},
 	{
-		Command: []string{"优先级", "priority"},
-		Admin:   true,
-		Handle: func(sender *Sender) interface{} {
-			priority := Int(sender.Contents[0])
-			if len(sender.Contents) > 1 {
-				sender.Contents = sender.Contents[1:]
-				sender.handleJdCookies(func(ck *JdCookie) {
-					ck.Update(Priority, priority)
-					sender.Reply(fmt.Sprintf("已设置账号%s(%s)的优先级为%d。", ck.PtPin, ck.Nickname, priority))
-				})
-			}
-			return nil
-		},
-	},
-	{
 		Command: []string{"cmd", "command", "命令"},
 		Admin:   true,
 		Handle: func(sender *Sender) interface{} {
@@ -457,7 +440,6 @@ var codeSignals = []CodeSignal{
 	},
 	{
 		Command: []string{"get-env", "env", "e"},
-		Admin:   true,
 		Handle: func(sender *Sender) interface{} {
 			ct := sender.JoinContens()
 			if ct == "" {
